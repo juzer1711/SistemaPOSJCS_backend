@@ -1,12 +1,14 @@
 package com.sistemaposjcs.sistemaposjcs.controller;
 
 import com.sistemaposjcs.sistemaposjcs.dto.AuditoriaDTO;
+import com.sistemaposjcs.sistemaposjcs.model.Auditoria;
 import com.sistemaposjcs.sistemaposjcs.service.AuditoriaService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.core.TypedPropertyPath;
 
 @RestController
 @RequestMapping("/api/auditoria")
@@ -33,7 +35,7 @@ public class AuditoriaController {
         Pageable pageable = PageRequest.of(
                 page,
                 size,
-                Sort.by(Sort.Direction.DESC, "fecha")
+                Sort.by(TypedPropertyPath.of(Auditoria::getFecha)).descending()
         );
 
         return auditoriaService.listarPaginado(

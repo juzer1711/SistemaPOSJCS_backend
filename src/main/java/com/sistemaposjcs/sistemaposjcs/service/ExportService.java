@@ -10,6 +10,7 @@ import java.util.List;
 
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.core.TypedPropertyPath;
 
 import com.sistemaposjcs.sistemaposjcs.repository.VentaRepository;
 import com.sistemaposjcs.sistemaposjcs.repository.CajaRepository;
@@ -22,7 +23,6 @@ import com.sistemaposjcs.sistemaposjcs.model.Cliente;
 import com.sistemaposjcs.sistemaposjcs.model.Producto;
 import com.sistemaposjcs.sistemaposjcs.model.Venta;
 import com.sistemaposjcs.sistemaposjcs.model.Enum.EstadoCaja;
-import com.sistemaposjcs.sistemaposjcs.model.Enum.TipoDocumento;
 
 // Clases de Apache POI (Para manejo de Excel)
 import org.apache.poi.ss.usermodel.*;
@@ -486,7 +486,7 @@ public byte[] exportAuditoriaExcel(
 
     List<Auditoria> auditorias = auditoriaRepository.findAll(
         auditoriaService.buildSpec(search, usuario, modulo, accion, fechaInicio, fechaFin),
-        Sort.by(Sort.Direction.DESC, "fecha")
+        Sort.by(TypedPropertyPath.of(Auditoria::getFecha)).descending()
     );
 
     Workbook workbook = new XSSFWorkbook();
@@ -541,7 +541,7 @@ public byte[] exportAuditoriaCSV(
 ) {
     List<Auditoria> auditorias = auditoriaRepository.findAll(
         auditoriaService.buildSpec(search, usuario, modulo, accion, fechaInicio, fechaFin),
-        Sort.by(Sort.Direction.DESC, "fecha")
+        Sort.by(TypedPropertyPath.of(Auditoria::getFecha)).descending()
     );
 
     StringBuilder sb = new StringBuilder();

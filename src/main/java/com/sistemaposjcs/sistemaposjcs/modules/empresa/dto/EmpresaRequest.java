@@ -43,6 +43,9 @@ public record EmpresaRequest(
 
         @Email(message = "El correo no tiene un formato válido")
         @Size(max = 150, message = "El correo no puede superar 150 caracteres")
-        String correo
+        String correo,
+
+        // Opcional durante la transicion del frontend; null conserva el valor existente.
+        Boolean responsableIva
 ) {
 }

@@ -24,6 +24,8 @@ import jakarta.persistence.criteria.Root;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -46,6 +48,24 @@ class ModuloServiceTest {
 
     @InjectMocks
     private ModuloService moduloService;
+
+    @Captor
+    private ArgumentCaptor<Specification<Modulo>> specificationCaptor;
+
+    @Mock
+    private Root<Modulo> root;
+
+    @Mock
+    private Path<String> nombrePath;
+
+    @Mock
+    private Path<String> zonaPath;
+
+    @Mock
+    private Expression<String> nombreLower;
+
+    @Mock
+    private Expression<String> zonaLower;
 
     @Test
     void ordenarIdDescartaIgnoreCaseDeLaSolicitud() {
@@ -139,34 +159,26 @@ class ModuloServiceTest {
     @Test
     void buscarEntregaLosFiltrosAlRepositorioConPaginacion() {
         Pageable pageable = PageRequest.of(1, 20);
-        when(moduloRepository.findAll(any(Specification.class), any(Pageable.class)))
+        when(moduloRepository.findAll(ArgumentMatchers.<Specification<Modulo>>any(), any(Pageable.class)))
                 .thenReturn(Page.empty(pageable));
 
         moduloService.buscar(pageable, "  prod  ", "Catálogo");
 
-        ArgumentCaptor<Specification<Modulo>> specificationCaptor = ArgumentCaptor.forClass(Specification.class);
         verify(moduloRepository).findAll(specificationCaptor.capture(), eq(PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Order.asc("nombreModulo").ignoreCase(), Sort.Order.asc("idModulo")))));
         assertNotNull(specificationCaptor.getValue());
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     void buscarUsaPrefijosInsensiblesAEspaciosYEscapaComodines() {
         Pageable pageable = PageRequest.of(0, 20);
-        when(moduloRepository.findAll(any(Specification.class), any(Pageable.class)))
+        when(moduloRepository.findAll(ArgumentMatchers.<Specification<Modulo>>any(), any(Pageable.class)))
                 .thenReturn(Page.empty(pageable));
 
         moduloService.buscar(pageable, " ProD%_\\ ", " Catálogo ");
 
-        ArgumentCaptor<Specification<Modulo>> specificationCaptor = ArgumentCaptor.forClass(Specification.class);
         verify(moduloRepository).findAll(specificationCaptor.capture(), eq(PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Order.asc("nombreModulo").ignoreCase(), Sort.Order.asc("idModulo")))));
 
         CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
-        Root<Modulo> root = mock(Root.class);
-        Path<String> nombrePath = mock(Path.class);
-        Path<String> zonaPath = mock(Path.class);
-        Expression<String> nombreLower = mock(Expression.class);
-        Expression<String> zonaLower = mock(Expression.class);
         Predicate nombrePredicate = mock(Predicate.class);
         Predicate zonaPredicate = mock(Predicate.class);
         Predicate combinedPredicate = mock(Predicate.class);

@@ -13,7 +13,6 @@ import com.sistemaposjcs.sistemaposjcs.repository.VentaRepository;
 import com.sistemaposjcs.sistemaposjcs.repository.ClienteRepository;
 import com.sistemaposjcs.sistemaposjcs.repository.ProductoRepository;
 import com.sistemaposjcs.sistemaposjcs.repository.CajaRepository;
-import com.sistemaposjcs.sistemaposjcs.modules.usuarios.repository.UsuarioRepository;
 import com.sistemaposjcs.sistemaposjcs.modules.autenticacion.service.UsuarioAuthService;
 
 import org.springframework.stereotype.Service;
@@ -37,7 +36,6 @@ public class VentaService {
     private final ClienteRepository clienteRepository;
     private final ProductoRepository productoRepository;
     private final CajaRepository cajaRepository;
-    private final UsuarioRepository userRepository;
     private final InventarioService inventarioService;
     private final UsuarioAuthService usuarioAuthService;
     private final AuditoriaService auditoriaService;
@@ -48,7 +46,6 @@ public class VentaService {
             ClienteRepository clienteRepository,
             ProductoRepository productoRepository,
             CajaRepository cajaRepository,
-            UsuarioRepository userRepository,
             InventarioService inventarioService,
             UsuarioAuthService usuarioAuthService,
             AuditoriaService auditoriaService
@@ -57,7 +54,6 @@ public class VentaService {
         this.clienteRepository = clienteRepository;
         this.productoRepository = productoRepository;
         this.cajaRepository = cajaRepository;
-        this.userRepository = userRepository;
         this.inventarioService = inventarioService;
         this.usuarioAuthService = usuarioAuthService;
         this.auditoriaService = auditoriaService;
@@ -197,7 +193,7 @@ public Venta createVenta(Venta venta) {
     try {
 
         int cantidadProductos = ventaGuardada.getItems().stream()
-                .mapToInt(ItemFactura::getCantidad)
+                .mapToInt(item -> item.getCantidad())
                 .sum();
 
         String descripcion =

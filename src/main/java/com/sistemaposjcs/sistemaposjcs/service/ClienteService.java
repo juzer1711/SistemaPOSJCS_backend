@@ -8,7 +8,6 @@ import jakarta.validation.Validator;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,17 +30,18 @@ public class ClienteService {
     private final UsuarioAuthService usuarioAuthService;
     private final AuditoriaService auditoriaService;
 
-    @Autowired
-    private Validator validator;
+    private final Validator validator;
 
     public ClienteService(
             ClienteRepository clienteRepository,
             AuditoriaService auditoriaService,
-            UsuarioAuthService usuarioAuthService
+            UsuarioAuthService usuarioAuthService,
+            Validator validator
     ) {
         this.clienteRepository = clienteRepository;
         this.auditoriaService = auditoriaService;
         this.usuarioAuthService = usuarioAuthService;
+        this.validator = validator;
     }
 
     // Obtener cliente por ID

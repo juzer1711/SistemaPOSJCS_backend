@@ -10,6 +10,7 @@ import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.core.TypedPropertyPath;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -45,7 +46,7 @@ public class AuditoriaService {
 
     // LISTAR DTO 
     public List<AuditoriaDTO> listar() {
-        return auditoriaRepository.findAll(Sort.by(Sort.Direction.DESC, "id"))
+        return auditoriaRepository.findAll(Sort.by(TypedPropertyPath.of(Auditoria::getId)).descending())
                 .stream()
                 .map(this::toDTO)
                 .toList();

@@ -72,7 +72,8 @@ class EmpresaRequestValidationTest {
                 municipio,
                 departamento,
                 telefono,
-                correo
+                correo,
+                null
         );
     }
 }

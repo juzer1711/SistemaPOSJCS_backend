@@ -72,7 +72,7 @@ public class GlobalExceptionHandler {
         Class<?> requiredType = exception.getRequiredType();
         if (requiredType != null && requiredType.isEnum()) {
             String allowedValues = java.util.Arrays.stream(requiredType.getEnumConstants())
-                    .map(Object::toString)
+                    .map(value -> value.toString())
                     .collect(Collectors.joining(", "));
             message += ". Valores permitidos: " + allowedValues;
         }

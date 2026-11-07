@@ -8,7 +8,6 @@ import java.util.function.Consumer;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.junit.jupiter.api.Test;
 import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class UsuarioExportServiceTest {
@@ -16,7 +15,11 @@ class UsuarioExportServiceTest {
         UsuarioService service = mock(UsuarioService.class);
         UsuarioResponse value = new UsuarioResponse(7L, "usuario,\"prueba\"", "Ana", null, "Pérez", null, "Ana Pérez",
                 TipoDocumento.NIT, "12345678", "ana@example.test", "3001234567", false);
-        doAnswer(invocation -> { ((Consumer<UsuarioResponse>) invocation.getArgument(3)).accept(value); return null; })
+        doAnswer(invocation -> {
+            Consumer<UsuarioResponse> consumer = invocation.getArgument(3);
+            consumer.accept(value);
+            return null;
+        })
                 .when(service).recorrerUsuarios(any(), any(), any(), any());
         UsuarioExportService exports = new UsuarioExportService(service);
         String csv = new String(exports.csv("ana", false, TipoDocumento.NIT), StandardCharsets.UTF_8);

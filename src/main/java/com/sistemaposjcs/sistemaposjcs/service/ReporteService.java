@@ -404,7 +404,7 @@ public class ReporteService {
         return obtenerTodasCajasAbiertas()
                 .stream()
                 .map(caja -> caja.getMontoInicial().add(caja.getTotalVentas()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal.ZERO, (total, valor) -> total.add(valor));
     }
 
     private List<Caja> obtenerTodasCajasAbiertas() {

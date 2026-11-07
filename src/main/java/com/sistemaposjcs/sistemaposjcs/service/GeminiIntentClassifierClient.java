@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.client.RestClient;
 
 import com.sistemaposjcs.sistemaposjcs.config.GeminiProperties;
@@ -45,7 +46,7 @@ public class GeminiIntentClassifierClient {
                             .build(geminiProperties.getModel()))
                     .body(construirRequest(pregunta))
                     .retrieve()
-                    .body(Map.class);
+                    .body(new ParameterizedTypeReference<Map<String, Object>>() {});
 
             return extraerTipoConsulta(response);
         } catch (Exception e) {
@@ -75,7 +76,6 @@ public class GeminiIntentClassifierClient {
         );
     }
 
-    @SuppressWarnings("unchecked")
     private Optional<TipoConsulta> extraerTipoConsulta(Map<String, Object> response) {
         if (response == null) {
             return Optional.empty();

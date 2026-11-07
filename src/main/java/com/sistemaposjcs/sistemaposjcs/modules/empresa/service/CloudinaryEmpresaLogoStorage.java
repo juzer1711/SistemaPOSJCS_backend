@@ -83,7 +83,7 @@ public class CloudinaryEmpresaLogoStorage implements EmpresaLogoStorage {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debes seleccionar una imagen");
         }
         if (file.getSize() > maxFileSize) {
-            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "El logo no puede superar 2 MB");
+            throw new ResponseStatusException(HttpStatus.CONTENT_TOO_LARGE, "El logo no puede superar 2 MB");
         }
 
         try (InputStream input = file.getInputStream();

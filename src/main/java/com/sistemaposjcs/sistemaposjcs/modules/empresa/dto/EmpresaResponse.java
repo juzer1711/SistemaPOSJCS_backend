@@ -14,7 +14,8 @@ public record EmpresaResponse(
         String telefono,
         String correo,
         String logo,
-        Boolean estado
+        Boolean estado,
+        Boolean responsableIva
 ) {
     public static EmpresaResponse from(Empresa empresa) {
         return new EmpresaResponse(
@@ -29,7 +30,8 @@ public record EmpresaResponse(
                 empresa.getTelefono(),
                 empresa.getCorreo(),
                 empresa.getLogo(),
-                empresa.getEstado()
+                empresa.getEstado(),
+                empresa.getResponsableIva()
         );
     }
 }

@@ -59,6 +59,10 @@ public class Empresa {
     @Column(name = "correo", length = 150)
     private String correo;
 
+    // null indica que la condicion tributaria aun no se ha configurado.
+    @Column(name = "responsable_iva")
+    private Boolean responsableIva;
+
     @Column(name = "logo", length = 500)
     private String logo;
 

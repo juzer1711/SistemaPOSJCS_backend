@@ -1,6 +1,8 @@
 package com.sistemaposjcs.sistemaposjcs.modules.empresa.controller;
 
 import com.sistemaposjcs.sistemaposjcs.modules.autorizacion.annotation.ModuloProtegido;
+import com.sistemaposjcs.sistemaposjcs.modules.autorizacion.annotation.PermisoRequerido;
+import com.sistemaposjcs.sistemaposjcs.modules.autorizacion.model.PermisoAccion;
 import com.sistemaposjcs.sistemaposjcs.modules.empresa.dto.EmpresaRequest;
 import com.sistemaposjcs.sistemaposjcs.modules.empresa.dto.EmpresaResponse;
 import com.sistemaposjcs.sistemaposjcs.modules.empresa.service.EmpresaService;
@@ -55,6 +57,7 @@ public class EmpresaController {
 
     @PostMapping("/logo")
     @ModuloProtegido("EMPRESA")
+    @PermisoRequerido(PermisoAccion.ACTUALIZACION)
     public ResponseEntity<EmpresaResponse> subirLogo(@RequestParam("file") MultipartFile file)
             throws java.io.IOException {
         return ResponseEntity.ok(empresaService.actualizarLogo(file));

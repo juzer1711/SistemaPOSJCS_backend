@@ -16,7 +16,6 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,7 +73,7 @@ public class EmpresaService {
 
     @Transactional
     public EmpresaResponse actualizarEmpresa(Long idEmpresa, EmpresaRequest request) {
-        Empresa empresa = empresaRepository.findById(idEmpresa)
+        Empresa empresa = empresaRepository.findByIdForUpdate(idEmpresa)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Empresa no encontrada"
@@ -99,22 +98,17 @@ public class EmpresaService {
 
     @Transactional
     public EmpresaResponse actualizarLogo(MultipartFile file) throws IOException {
-        Empresa empresa = obtenerEmpresaExistente();
+        // Ambas escrituras bloquean la misma fila, incluso entre sesiones distintas.
+        Empresa empresa = empresaRepository.findFirstWithLockByOrderByIdEmpresaAsc()
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "No existe una empresa registrada"));
         String logoAnterior = empresa.getLogoPublicId();
         EmpresaLogoStorage.LogoAsset nuevoLogo = logoStorage.upload(file);
+        sincronizarLimpiezaLogo(nuevoLogo.publicId(), logoAnterior);
         empresa.setLogo(nuevoLogo.url());
         empresa.setLogoPublicId(nuevoLogo.publicId());
 
-        try {
-            empresaRepository.saveAndFlush(empresa);
-        } catch (DataAccessException exception) {
-            eliminarLogoSinEnmascararError(nuevoLogo.publicId());
-            throw exception;
-        }
-
-        if (logoAnterior != null && !logoAnterior.equals(nuevoLogo.publicId())) {
-            eliminarLogoDespuesDeConfirmar(logoAnterior);
-        }
+        empresaRepository.saveAndFlush(empresa);
 
         Usuario administrador = usuarioAuthService.getUsuarioLogueado();
         auditoriaService.registrar(
@@ -161,6 +155,9 @@ public class EmpresaService {
         empresa.setDepartamento(request.departamento().trim());
         empresa.setTelefono(request.telefono().trim());
         empresa.setCorreo(normalizarOpcional(request.correo()));
+        if (request.responsableIva() != null) {
+            empresa.setResponsableIva(request.responsableIva());
+        }
     }
 
     private List<String> camposModificados(Empresa empresa, EmpresaRequest request) {
@@ -179,6 +176,9 @@ public class EmpresaService {
         agregarSiCambio(campos, "departamento", empresa.getDepartamento(), request.departamento().trim());
         agregarSiCambio(campos, "telefono", empresa.getTelefono(), request.telefono().trim());
         agregarSiCambio(campos, "correo", empresa.getCorreo(), normalizarOpcional(request.correo()));
+        if (request.responsableIva() != null) {
+            agregarSiCambio(campos, "responsableIva", empresa.getResponsableIva(), request.responsableIva());
+        }
         return campos;
     }
 
@@ -192,14 +192,20 @@ public class EmpresaService {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    private void eliminarLogoDespuesDeConfirmar(String publicId) {
+    private void sincronizarLimpiezaLogo(String nuevoPublicId, String anteriorPublicId) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                try {
-                    logoStorage.delete(publicId);
-                } catch (IOException exception) {
-                    LOGGER.error("No se pudo eliminar el logo anterior de Cloudinary: {}", publicId, exception);
+                if (anteriorPublicId != null && !anteriorPublicId.equals(nuevoPublicId)) {
+                    eliminarLogoSinEnmascararError(anteriorPublicId);
+                }
+            }
+
+            @Override
+            public void afterCompletion(int status) {
+                // También compensa fallos de auditoría y del commit, no solo saveAndFlush.
+                if (status == STATUS_ROLLED_BACK) {
+                    eliminarLogoSinEnmascararError(nuevoPublicId);
                 }
             }
         });
@@ -208,8 +214,8 @@ public class EmpresaService {
     private void eliminarLogoSinEnmascararError(String publicId) {
         try {
             logoStorage.delete(publicId);
-        } catch (IOException cleanupException) {
-            LOGGER.error("No se pudo limpiar el logo nuevo tras fallar el guardado: {}", publicId, cleanupException);
+        } catch (IOException | RuntimeException cleanupException) {
+            LOGGER.warn("No se pudo limpiar un logo de Cloudinary tras la transacción", cleanupException);
         }
     }
 }

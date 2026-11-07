@@ -1,7 +1,6 @@
 package com.sistemaposjcs.sistemaposjcs.controller;
 
 import com.sistemaposjcs.sistemaposjcs.model.Enum.EstadoCaja;
-import com.sistemaposjcs.sistemaposjcs.model.Enum.TipoDocumento;
 import com.sistemaposjcs.sistemaposjcs.service.ExportService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;

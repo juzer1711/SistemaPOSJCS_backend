@@ -1,6 +1,6 @@
 # Backend Sistema POS
 
-API REST en Java 21 y Spring Boot 4.1.0 con JPA/Hibernate, Spring Security y PostgreSQL 17. Maven Wrapper fija Maven 3.9.11; pom.xml es la fuente de versiones.
+API REST en Java 21 y Spring Boot 4.1.2 con JPA/Hibernate, Spring Security y PostgreSQL 17. Maven Wrapper fija Maven 3.9.11; pom.xml es la fuente de versiones.
 
 ## Entorno y ejecución
 
@@ -124,7 +124,33 @@ Crear usuarios/módulos preasigna reglas mediante INSERT ... SELECT con permisos
 
 Una empresa por instalación. GET /api/empresa es público para personalización; POST requiere X-Empresa-Setup-Token mientras no exista empresa. PUT /api/empresa/{idEmpresa} y POST /api/empresa/logo requieren ACTUALIZACION EMPRESA.
 
+La acción del POST de logo se declara explícitamente como ACTUALIZACION: no exige INSERCION ni CONSULTA. La consulta pública no adquiere permisos administrativos. El frontend protege el acceso a su formulario con CONSULTA y las acciones con ACTUALIZACION; esto no restringe el contenido del GET público.
+
+Las escrituras de datos y logo usan bloqueo pesimista de la misma fila para serializar solicitudes concurrentes de distintas sesiones y preservar el logo/datos ajenos a cada operación. Esto no detecta borradores antiguos de campos editables: entre dos PUT completos prevalece el último que se aplica.
+
+La respuesta de ambas escrituras es EmpresaResponse completa. El PUT acepta los campos de EmpresaRequest, incluido `responsableIva`; no modifica logo ni estado. El logo recibe multipart `file`; elimina el anterior después del commit y compensa el nuevo cuando la transacción hace rollback, incluidos fallos posteriores de auditoría. La limpieza fallida se registra sin convertir un commit exitoso en error; no hay una cola persistente de reintentos de Cloudinary.
+
 El token inicial se introduce manualmente y no se guarda en frontend. Logos Cloudinary limitados a 2 MB, PNG/JPEG y dimensiones verificadas; namespace distingue instalaciones. El perfil se utiliza en presentación y tiquetes; esta fase no implementa facturación electrónica DIAN.
+
+### Condición de responsable de IVA
+
+La entidad Empresa incorpora `responsableIva`, persistido en la columna nullable `responsable_iva` de tipo boolean. `true` significa responsable, `false` no responsable y `null` pendiente de configurar. No se deduce del tamaño del negocio ni se asigna un valor por defecto a instalaciones existentes.
+
+POST y PUT aceptan el campo adicional `responsableIva` como booleano JSON. Durante la transición del frontend es opcional: omitirlo o enviar `null` conserva el dato existente al actualizar y deja pendiente la condición al crear. Enviar `false` sí actualiza el dato; una vez configurado, `null` no permite borrarlo. Por tanto, el PUT admite los nueve campos anteriores más este dato opcional. No hay endpoint fiscal adicional.
+
+GET y las respuestas de registro, actualización y logo incluyen el campo. La lectura sigue siendo pública para personalización; la escritura conserva ACTUALIZACION EMPRESA y el bloqueo de fila. La auditoría incluye el nombre `responsableIva` cuando cambia, sin copiar el payload. No se modifican productos, costos, cálculos de ventas, reportes ni comprobantes en esta etapa.
+
+Ejemplo de propiedad que se añade al cuerpo completo de registro/actualización:
+
+```json
+{ "responsableIva": true }
+```
+
+Este fragmento no es un PUT completo: los demás campos obligatorios siguen siendo necesarios. El siguiente paso del frontend deberá solicitar una selección explícita. Antes de usar esta condición para liquidar impuestos, resolver los registros pendientes y guardar la condición aplicada en cada venta; nunca interpretar `null` como `false`.
+
+Para bases existentes se incluye [sql/empresa-responsable-iva.sql](sql/empresa-responsable-iva.sql), aditivo e idempotente, sin asignar condiciones tributarias a datos previos. Revisarlo y aplicarlo explícitamente; su presencia no acredita que ya se ejecutó. Hibernate puede crear la columna al arrancar con `ddl-auto=update`; el script no se ejecuta automáticamente desde esta carpeta.
+
+Validación de esta ampliación: 45 pruebas seleccionadas sin fallos (EmpresaServiceTest, EmpresaHttpTest, EmpresaRequestValidationTest, CloudinaryEmpresaLogoStorageTest y AutorizacionInterceptorTest). Cubren valores true/false, condición pendiente, conservación ante solicitudes antiguas, auditoría, permisos y conservación al cambiar logo. Son pruebas unitarias y MVC con servicios/identidad simulados; no validan persistencia o migración en PostgreSQL real ni JWT real.
 
 ## Errores y rendimiento
 
@@ -133,6 +159,18 @@ Errores JSON con status, error, message y path; validación agrega field/fieldEr
 Aplicar filtros y orden en servidor, evitar N+1 y seleccionar campos necesarios. No asegurar rendimiento por usar paginación: medir consultas reales y COUNT con EXPLAIN (ANALYZE, BUFFERS) antes de incorporar índices. Búsqueda parcial de usuarios y búsqueda por prefijo de otros dominios son contratos distintos.
 
 ## Pruebas y estado de validación
+
+Maven muestra deprecaciones y advertencias de tipos genéricos (`unchecked` y `rawtypes`) mediante la configuración del compilador. Corregir su causa sin ocultarlas globalmente. Estos diagnósticos de javac no sustituyen los del panel de Problemas de VS Code, que puede incluir análisis de nulabilidad y avisos de extensiones.
+
+Tras cambiar pom.xml, actualizar la configuración Java del proyecto en VS Code para renovar el classpath y los diagnósticos del editor. La actualización de Maven por consola no confirma que el servidor de lenguaje ya haya importado esos cambios. Los órdenes estáticos de módulos y auditoría usan TypedPropertyPath; los campos recibidos por API siguen siendo textuales y se validan en cada dominio.
+
+Para comprobar compilación limpia y pruebas sin iniciar Spring contra servicios reales: `.\mvnw.cmd "-Dtest=*Test,!UsuarioRepositoryPostgresTest" clean test`. El patrón excluye tanto la prueba PostgreSQL opcional como `SistemaposjcsApplicationTests`; no acredita el arranque integral del contexto. Los logs de fallos simulados y el aviso de la JVM sobre CDS durante instrumentación Mockito no equivalen a advertencias de compilación.
+
+El refactor de perfil de empresa del 6 de noviembre verificó 40 pruebas seleccionadas de empresa, autorización y autenticación sin fallos. Incluyen MockMvc con identidad/servicios simulados, validación de imágenes reales en memoria con Cloudinary simulado y callbacks de commit/rollback simulados. No prueban los bloqueos en PostgreSQL real ni un flujo HTTP con JWT y Cloudinary reales. Ejecución reproducible:
+
+```powershell
+.\mvnw.cmd "-Dtest=EmpresaServiceTest,EmpresaHttpTest,EmpresaRequestValidationTest,CloudinaryEmpresaLogoStorageTest,AutorizacionInterceptorTest,AuthServiceTest,AuthControllerTest,JwtTokenRevocationServiceTest" test
+```
 
 ```powershell
 .\mvnw.cmd test

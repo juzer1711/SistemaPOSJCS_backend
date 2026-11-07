@@ -13,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.core.TypedPropertyPath;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -108,9 +109,9 @@ public class ModuloService {
     }
 
     private Pageable validarPaginacion(Pageable pageable) {
-        Set<String> permitidos = Set.of("idModulo", "codigoModulo", "nombreModulo", "zona");
         List<Sort.Order> ordenes = new ArrayList<>();
-        Sort sort = pageable.getSort().isSorted() ? pageable.getSort() : Sort.by("nombreModulo");
+        Sort sort = pageable.getSort().isSorted() ? pageable.getSort()
+                : Sort.by(TypedPropertyPath.of(Modulo::getNombreModulo));
         for (Sort.Order order : sort) {
             if (!CAMPOS_ORDENABLES.contains(order.getProperty())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -120,7 +121,7 @@ public class ModuloService {
             ordenes.add(order.getProperty().equals("idModulo") ? orden : orden.ignoreCase());
         }
         if (ordenes.stream().noneMatch(order -> order.getProperty().equals("idModulo"))) {
-            ordenes.add(Sort.Order.asc("idModulo"));
+            ordenes.add(Sort.Order.asc(TypedPropertyPath.of(Modulo::getIdModulo)));
         }
         return PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), 100), Sort.by(ordenes));
     }

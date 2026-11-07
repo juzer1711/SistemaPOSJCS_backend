@@ -25,7 +25,7 @@ public class QueryExecutorService {
 
     private final ReporteService reporteService;
     private final NumberFormat formatoMoneda = NumberFormat.getCurrencyInstance(
-            new Locale("es", "CO")
+            Locale.of("es", "CO")
     );
     private final DateTimeFormatter formatoFecha = DateTimeFormatter.ofPattern(
             "dd/MM/yyyy HH:mm"

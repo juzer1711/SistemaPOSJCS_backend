@@ -87,7 +87,7 @@ public class GeminiPromptBuilder {
 
     private String obtenerValoresPermitidos() {
         return Arrays.stream(TipoConsulta.values())
-                .map(Enum::name)
+                .map(tipo -> tipo.name())
                 .collect(Collectors.joining("\n"));
     }
 }
